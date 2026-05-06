@@ -35,6 +35,15 @@ export default function FoodCard({ food, onDeleted }: Props) {
       <div className="flex-1 min-w-0">
         <p className="font-medium text-gray-900 truncate">{food.name}</p>
         <p className="text-sm text-gray-500">{food.quantity} {food.unit}</p>
+        {food.tags?.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1">
+            {food.tags.map((tag) => (
+              <span key={tag} className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full border border-green-200">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-3 ml-3">
         {status.label && (

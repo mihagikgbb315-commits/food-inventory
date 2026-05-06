@@ -16,6 +16,12 @@ export const db = getFirestore(app)
 
 export type Category = '冷蔵' | '冷凍' | '常温'
 
+export type Tag = {
+  id: string
+  name: string
+  created_at: string
+}
+
 export type Food = {
   id: string
   name: string
@@ -24,4 +30,5 @@ export type Food = {
   unit: string
   expiry_date: string | null
   created_at: string
+  tags: string[]
 }

@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { collection, addDoc } from 'firebase/firestore'
-import { db, type Category, type Food } from '@/lib/firebase'
+import { db, type Category, type Food, type Tag } from '@/lib/firebase'
 import BarcodeScanner from './BarcodeScanner'
 import PhotoRecognizer from './PhotoRecognizer'
 
 type Props = {
+  tags: Tag[]
   onAdded: (food: Food) => void
   onClose: () => void
 }
@@ -24,11 +25,17 @@ const defaultForm = {
   expiry_date: '',
 }
 
-export default function AddFoodModal({ onAdded, onClose }: Props) {
+export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
   const [tab, setTab] = useState<Tab>('manual')
   const [form, setForm] = useState(defaultForm)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const toggleTag = (name: string) =>
+    setSelectedTags((prev) =>
+      prev.includes(name) ? prev.filter((t) => t !== name) : [...prev, name]
+    )
 
   const handleBarcodeDetected = (name: string) => {
     setTab('manual')
@@ -48,8 +55,9 @@ export default function AddFoodModal({ onAdded, onClose }: Props) {
           ...food,
           expiry_date: null,
           created_at: now,
+          tags: selectedTags,
         })
-        onAdded({ id: ref.id, ...food, expiry_date: null, created_at: now })
+        onAdded({ id: ref.id, ...food, expiry_date: null, created_at: now, tags: selectedTags })
       }
       onClose()
     } catch (e) {
@@ -72,6 +80,7 @@ export default function AddFoodModal({ onAdded, onClose }: Props) {
         unit: form.unit,
         expiry_date: form.expiry_date || null,
         created_at: now,
+        tags: selectedTags,
       }
       const ref = await addDoc(collection(db, 'foods'), data)
       onAdded({ id: ref.id, ...data })
@@ -147,6 +156,28 @@ export default function AddFoodModal({ onAdded, onClose }: Props) {
                   ))}
                 </div>
               </div>
+
+              {tags.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">タグ（任意・複数選択可）</label>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag) => (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => toggleTag(tag.name)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                          selectedTags.includes(tag.name)
+                            ? 'bg-green-600 text-white border-green-600'
+                            : 'bg-white text-gray-600 border-gray-300'
+                        }`}
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3">
                 <div className="flex-1">

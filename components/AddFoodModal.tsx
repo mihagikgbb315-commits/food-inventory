@@ -26,7 +26,7 @@ const CATEGORY_ACTIVE: Record<string, string> = {
 const defaultForm = {
   name: '',
   category: '冷蔵' as Category,
-  quantity: 1,
+  quantity: '' as number | '',
   unit: '個',
   expiry_date: '',
   memo: '',
@@ -83,7 +83,7 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
       const data = {
         name: form.name.trim(),
         category: form.category,
-        quantity: form.quantity,
+        quantity: form.quantity === '' ? 0 : form.quantity,
         unit: form.unit,
         expiry_date: form.expiry_date || null,
         created_at: now,
@@ -207,7 +207,7 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
                     min={0}
                     step="any"
                     value={form.quantity}
-                    onChange={(e) => setForm((f) => ({ ...f, quantity: parseFloat(e.target.value) || 0 }))}
+                    onChange={(e) => setForm((f) => ({ ...f, quantity: e.target.value === '' ? '' : parseFloat(e.target.value) || 0 }))}
                     className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   />
                 </div>

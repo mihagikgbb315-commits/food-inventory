@@ -30,7 +30,8 @@ export default function FoodCard({ food, onDeleted, onEdit }: Props) {
   const [deleting, setDeleting] = useState(false)
   const status = expiryStatus(food.expiry_date)
 
-  const handleDelete = async () => {
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation()
     if (!confirm(`「${food.name}」を削除しますか？`)) return
     setDeleting(true)
     await deleteDoc(doc(db, 'foods', food.id))
@@ -38,43 +39,35 @@ export default function FoodCard({ food, onDeleted, onEdit }: Props) {
   }
 
   return (
-    <div className={`flex items-center bg-gray-900 border border-gray-800 border-l-4 ${CATEGORY_BORDER[food.category]} rounded-2xl px-4 py-3.5 transition-all hover:border-gray-700`}>
+    <div
+      onClick={() => onEdit(food)}
+      className={`flex items-center bg-gray-900 border border-gray-800 border-l-4 ${CATEGORY_BORDER[food.category]} rounded-xl px-3 py-2.5 gap-2 cursor-pointer hover:border-gray-700 active:bg-gray-800/80 transition-all`}
+    >
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-white truncate">{food.name}</p>
-        <p className="text-sm text-gray-500 mt-0.5">{food.quantity} {food.unit}</p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="font-semibold text-white text-sm">{food.name}</span>
+          <span className="text-xs text-gray-500 flex-shrink-0">{food.quantity} {food.unit}</span>
+          {food.tags?.map((tag) => (
+            <span key={tag} className="text-xs bg-emerald-500/15 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-500/25 flex-shrink-0">
+              {tag}
+            </span>
+          ))}
+        </div>
         {food.memo && (
-          <p className="text-xs text-gray-500 mt-1 leading-relaxed">{food.memo}</p>
-        )}
-        {food.tags?.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mt-2">
-            {food.tags.map((tag) => (
-              <span key={tag} className="text-xs bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/25">
-                {tag}
-              </span>
-            ))}
-          </div>
+          <p className="text-xs text-gray-600 mt-0.5 truncate">{food.memo}</p>
         )}
       </div>
-      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+      <div className="flex items-center gap-1.5 flex-shrink-0">
         {status && (
-          <span className={`text-xs font-medium px-2.5 py-1 rounded-full whitespace-nowrap ${status.style}`}>
+          <span className={`text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${status.style}`}>
             {status.label}
           </span>
         )}
         <button
-          onClick={() => onEdit(food)}
-          className="text-gray-600 hover:text-emerald-400 transition-colors p-1"
-          aria-label="編集"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
-        <button
           onClick={handleDelete}
           disabled={deleting}
-          className="text-gray-700 hover:text-red-400 transition-colors text-xl leading-none disabled:opacity-30"
+          className="text-gray-700 hover:text-red-400 transition-colors text-xl leading-none disabled:opacity-30 p-1"
+          aria-label="削除"
         >
           ×
         </button>

@@ -22,11 +22,38 @@ const CATEGORY_ACTIVE: Record<string, string> = {
   常温: 'from-amber-500 to-orange-400 shadow-amber-500/30',
 }
 
+type SortKey = 'expiry' | 'name' | 'category' | 'added'
+
+const SORT_LABELS: Record<SortKey, string> = {
+  expiry: '消費期限',
+  name: '名前順',
+  category: 'カテゴリ',
+  added: '追加順',
+}
+
+const CATEGORY_ORDER: Record<string, number> = { 冷蔵: 0, 冷凍: 1, 常温: 2 }
+
+function sortFoods(foods: Food[], key: SortKey): Food[] {
+  return [...foods].sort((a, b) => {
+    if (key === 'expiry') {
+      if (!a.expiry_date && !b.expiry_date) return 0
+      if (!a.expiry_date) return 1
+      if (!b.expiry_date) return -1
+      return a.expiry_date.localeCompare(b.expiry_date)
+    }
+    if (key === 'name') return a.name.localeCompare(b.name, 'ja')
+    if (key === 'category') return (CATEGORY_ORDER[a.category] ?? 9) - (CATEGORY_ORDER[b.category] ?? 9)
+    if (key === 'added') return b.created_at.localeCompare(a.created_at)
+    return 0
+  })
+}
+
 export default function Home() {
   const [foods, setFoods] = useState<Food[]>([])
   const [tags, setTags] = useState<Tag[]>([])
   const [activeCategory, setActiveCategory] = useState<'全て' | Category>('全て')
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const [sortKey, setSortKey] = useState<SortKey>('expiry')
   const [showModal, setShowModal] = useState(false)
   const [showTagManager, setShowTagManager] = useState(false)
   const [editingFood, setEditingFood] = useState<Food | null>(null)
@@ -42,12 +69,6 @@ export default function Home() {
         const raw = d.data()
         return { id: d.id, ...raw, tags: raw.tags ?? [] } as Food
       })
-      foodData.sort((a, b) => {
-        if (!a.expiry_date && !b.expiry_date) return 0
-        if (!a.expiry_date) return 1
-        if (!b.expiry_date) return -1
-        return a.expiry_date.localeCompare(b.expiry_date)
-      })
       setFoods(foodData)
       setTags(tagsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Tag)))
       setLoading(false)
@@ -55,9 +76,12 @@ export default function Home() {
     loadData()
   }, [])
 
-  const filtered = foods
-    .filter((f) => activeCategory === '全て' || f.category === activeCategory)
-    .filter((f) => activeTag === null || f.tags?.includes(activeTag))
+  const filtered = sortFoods(
+    foods
+      .filter((f) => activeCategory === '全て' || f.category === activeCategory)
+      .filter((f) => activeTag === null || f.tags?.includes(activeTag)),
+    sortKey
+  )
 
   const expiringCount = foods.filter((f) => {
     if (!f.expiry_date) return false
@@ -125,7 +149,7 @@ export default function Home() {
 
         {/* Tag filters */}
         {tags.length > 0 && (
-          <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
             <button
               onClick={() => setActiveTag(null)}
               className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
@@ -159,6 +183,23 @@ export default function Home() {
           </div>
         )}
 
+        {/* Sort options */}
+        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-hide">
+          {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setSortKey(key)}
+              className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                sortKey === key
+                  ? 'bg-gray-700 text-white'
+                  : 'text-gray-600 hover:text-gray-400'
+              }`}
+            >
+              {SORT_LABELS[key]}
+            </button>
+          ))}
+        </div>
+
         {/* Food list */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
@@ -172,7 +213,7 @@ export default function Home() {
             <p className="text-gray-600 text-sm mt-1">下の＋ボタンで追加しましょう</p>
           </div>
         ) : (
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-1.5">
             {filtered.map((food) => (
               <FoodCard
                 key={food.id}

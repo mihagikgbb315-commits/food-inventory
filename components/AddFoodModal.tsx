@@ -30,9 +30,9 @@ export default function AddFoodModal({ onAdded, onClose }: Props) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleBarcodeDetected = (code: string) => {
+  const handleBarcodeDetected = (name: string) => {
     setTab('manual')
-    setForm((f) => ({ ...f, name: `バーコード: ${code}` }))
+    setForm((f) => ({ ...f, name }))
   }
 
   const handlePhotoRecognized = async (

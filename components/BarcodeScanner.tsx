@@ -3,17 +3,19 @@
 import { useEffect, useRef, useState } from 'react'
 
 type Props = {
-  onDetected: (code: string) => void
+  onDetected: (name: string) => void
   onClose: () => void
 }
 
 export default function BarcodeScanner({ onDetected, onClose }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
+  const controlsRef = useRef<{ stop: () => void } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [looking, setLooking] = useState(false)
+  const detectedRef = useRef(false)
 
   useEffect(() => {
     let stopped = false
-    let controls: { stop: () => void } | null = null
 
     const start = async () => {
       const { BrowserMultiFormatReader } = await import('@zxing/browser')
@@ -25,11 +27,23 @@ export default function BarcodeScanner({ onDetected, onClose }: Props) {
 
         if (!videoRef.current || stopped) return
 
-        controls = await reader.decodeFromVideoDevice(
+        controlsRef.current = await reader.decodeFromVideoDevice(
           deviceId,
           videoRef.current,
-          (result) => {
-            if (result) onDetected(result.getText())
+          async (result) => {
+            if (!result || detectedRef.current) return
+            detectedRef.current = true
+            controlsRef.current?.stop()
+            setLooking(true)
+
+            const code = result.getText()
+            try {
+              const res = await fetch(`/api/barcode?code=${encodeURIComponent(code)}`)
+              const data = await res.json()
+              onDetected(data.name || code)
+            } catch {
+              onDetected(code)
+            }
           }
         )
       } catch (e) {
@@ -41,7 +55,7 @@ export default function BarcodeScanner({ onDetected, onClose }: Props) {
     start()
     return () => {
       stopped = true
-      controls?.stop()
+      controlsRef.current?.stop()
     }
   }, [onDetected])
 
@@ -49,6 +63,11 @@ export default function BarcodeScanner({ onDetected, onClose }: Props) {
     <div className="flex flex-col items-center gap-4">
       {error ? (
         <p className="text-red-600 text-sm text-center">{error}</p>
+      ) : looking ? (
+        <div className="flex flex-col items-center gap-2 py-4">
+          <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-600">商品名を検索中...</p>
+        </div>
       ) : (
         <>
           <p className="text-sm text-gray-600">バーコードをカメラに向けてください</p>
@@ -58,12 +77,14 @@ export default function BarcodeScanner({ onDetected, onClose }: Props) {
           </div>
         </>
       )}
-      <button
-        onClick={onClose}
-        className="w-full py-2 rounded-lg border border-gray-300 text-gray-700"
-      >
-        キャンセル
-      </button>
+      {!looking && (
+        <button
+          onClick={onClose}
+          className="w-full py-2 rounded-lg border border-gray-300 text-gray-700"
+        >
+          キャンセル
+        </button>
+      )}
     </div>
   )
 }

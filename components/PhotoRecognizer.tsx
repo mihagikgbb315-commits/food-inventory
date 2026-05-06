@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import type { Category } from '@/lib/firebase'
+import { fileToJpeg } from '@/lib/imageUtils'
 
 type RecognizedFood = {
   name: string
@@ -87,30 +88,4 @@ export default function PhotoRecognizer({ onRecognized, onClose }: Props) {
       )}
     </div>
   )
-}
-
-function fileToJpeg(file: File): Promise<{ base64: string; mediaType: string }> {
-  return new Promise((resolve, reject) => {
-    const img = new Image()
-    const url = URL.createObjectURL(file)
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      const MAX = 1280
-      let w = img.naturalWidth
-      let h = img.naturalHeight
-      if (w > MAX || h > MAX) {
-        if (w > h) { h = Math.round((h * MAX) / w); w = MAX }
-        else { w = Math.round((w * MAX) / h); h = MAX }
-      }
-      const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(img, 0, 0, w, h)
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
-      resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' })
-    }
-    img.onerror = reject
-    img.src = url
-  })
 }

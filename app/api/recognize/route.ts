@@ -2,8 +2,19 @@ export const dynamic = 'force-dynamic'
 
 import Anthropic from '@anthropic-ai/sdk'
 
+const SUPPORTED = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'] as const
+type SupportedType = typeof SUPPORTED[number]
+
 export async function POST(request: Request) {
   const { imageBase64, mediaType, mode } = await request.json()
+
+  // iOSのHEICなど非対応フォーマットはJPEGにフォールバック
+  const safeType: SupportedType = SUPPORTED.includes(mediaType as SupportedType)
+    ? (mediaType as SupportedType)
+    : 'image/jpeg'
+
+  if (!imageBase64) return Response.json({ error: '画像データがありません' }, { status: 400 })
+
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   // mode='label': パッケージラベルから商品名を1つ読み取る
@@ -16,7 +27,7 @@ export async function POST(request: Request) {
         content: [
           {
             type: 'image',
-            source: { type: 'base64', media_type: mediaType ?? 'image/jpeg', data: imageBase64 },
+            source: { type: 'base64', media_type: safeType, data: imageBase64 },
           },
           {
             type: 'text',
@@ -43,7 +54,7 @@ export async function POST(request: Request) {
       content: [
         {
           type: 'image',
-          source: { type: 'base64', media_type: mediaType ?? 'image/jpeg', data: imageBase64 },
+          source: { type: 'base64', media_type: safeType, data: imageBase64 },
         },
         {
           type: 'text',

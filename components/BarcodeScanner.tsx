@@ -141,9 +141,13 @@ export default function BarcodeScanner({ onDetected, onClose }: Props) {
   // not-found: ラベル撮影を促す
   return (
     <div className="flex flex-col gap-4">
-      <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl px-4 py-4 text-center">
-        <p className="text-amber-400 text-sm font-medium">データベースに商品情報がありませんでした</p>
-        <p className="text-gray-500 text-xs mt-1">商品パッケージのラベルをAIに読み取らせて商品名を取得できます</p>
+      <div className="bg-gray-800 border border-gray-700 rounded-2xl px-4 py-5 text-center">
+        <p className="text-2xl mb-2">🔍</p>
+        <p className="text-white text-sm font-semibold">バーコードは読み取れましたが、</p>
+        <p className="text-white text-sm font-semibold">商品名のデータがありませんでした</p>
+        <p className="text-gray-500 text-xs mt-2">
+          次のどちらかで商品名を登録してください
+        </p>
       </div>
 
       <input
@@ -162,14 +166,14 @@ export default function BarcodeScanner({ onDetected, onClose }: Props) {
         onClick={() => labelInputRef.current?.click()}
         className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold hover:shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98] transition-all"
       >
-        📷 商品ラベルを撮影して認識
+        📷 商品パッケージを撮影してAIに認識させる
       </button>
 
       <button
         onClick={() => onDetected('')}
-        className="w-full py-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-400 font-medium hover:border-gray-600 transition-colors"
+        className="w-full py-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-300 font-medium hover:border-gray-600 transition-colors"
       >
-        手動で商品名を入力する
+        ✏️ 商品名を自分で入力する
       </button>
 
       <button onClick={onClose} className="w-full py-2 text-gray-600 text-sm">

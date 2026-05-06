@@ -24,11 +24,11 @@ export default function PhotoRecognizer({ onRecognized, onClose }: Props) {
     setLoading(true)
     setError(null)
     try {
-      const base64 = await fileToBase64(file)
+      const { base64, mediaType } = await fileToJpeg(file)
       const res = await fetch('/api/recognize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageBase64: base64, mediaType: file.type }),
+        body: JSON.stringify({ imageBase64: base64, mediaType }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? '認識に失敗しました')
@@ -85,14 +85,28 @@ export default function PhotoRecognizer({ onRecognized, onClose }: Props) {
   )
 }
 
-function fileToBase64(file: File): Promise<string> {
+function fileToJpeg(file: File): Promise<{ base64: string; mediaType: string }> {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = reader.result as string
-      resolve(result.split(',')[1])
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const MAX = 1280
+      let w = img.naturalWidth
+      let h = img.naturalHeight
+      if (w > MAX || h > MAX) {
+        if (w > h) { h = Math.round((h * MAX) / w); w = MAX }
+        else { w = Math.round((w * MAX) / h); h = MAX }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')!
+      ctx.drawImage(img, 0, 0, w, h)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+      resolve({ base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' })
     }
-    reader.onerror = reject
-    reader.readAsDataURL(file)
+    img.onerror = reject
+    img.src = url
   })
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
 import { db, type Food, type Category, type Tag } from '@/lib/firebase'
 import AddFoodModal from '@/components/AddFoodModal'
+import EditFoodModal from '@/components/EditFoodModal'
 import FoodCard from '@/components/FoodCard'
 import PushNotificationButton from '@/components/PushNotificationButton'
 import TagManager from '@/components/TagManager'
@@ -28,6 +29,7 @@ export default function Home() {
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [showTagManager, setShowTagManager] = useState(false)
+  const [editingFood, setEditingFood] = useState<Food | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -176,6 +178,7 @@ export default function Home() {
                 key={food.id}
                 food={food}
                 onDeleted={(id) => setFoods((prev) => prev.filter((f) => f.id !== id))}
+                onEdit={setEditingFood}
               />
             ))}
           </div>
@@ -196,6 +199,18 @@ export default function Home() {
           tags={tags}
           onAdded={(food) => setFoods((prev) => [food, ...prev])}
           onClose={() => setShowModal(false)}
+        />
+      )}
+
+      {editingFood && (
+        <EditFoodModal
+          food={editingFood}
+          tags={tags}
+          onUpdated={(updated) => {
+            setFoods((prev) => prev.map((f) => f.id === updated.id ? updated : f))
+            setEditingFood(null)
+          }}
+          onClose={() => setEditingFood(null)}
         />
       )}
 

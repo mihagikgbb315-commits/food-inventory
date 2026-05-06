@@ -14,6 +14,21 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0
 
 export const db = getFirestore(app)
 
+export type Section = '食材' | '日用品' | '防災用品'
+
+export const SECTION_CATEGORIES: Record<Section, string[]> = {
+  食材: ['冷蔵', '冷凍', '常温'],
+  日用品: ['トイレタリー', '洗剤・クリーナー', 'キッチン用品', '衛生用品', 'その他'],
+  防災用品: ['食料・水', '救急・医療', '照明・電源', '工具・避難用品', 'その他'],
+}
+
+export const SECTION_UNITS: Record<Section, string[]> = {
+  食材: ['個', 'g', 'kg', 'ml', 'L', '本', '袋', '枚', 'パック', '缶'],
+  日用品: ['個', '本', '袋', 'セット', '箱', 'ロール', 'ケース', '枚'],
+  防災用品: ['個', '本', '袋', 'セット', '箱', 'L', '缶', '枚', 'kg'],
+}
+
+// kept for backward compat
 export type Category = '冷蔵' | '冷凍' | '常温'
 
 export type Tag = {
@@ -24,8 +39,9 @@ export type Tag = {
 
 export type Food = {
   id: string
+  section: Section
   name: string
-  category: Category
+  category: string
   quantity: number
   unit: string
   expiry_date: string | null

@@ -2,36 +2,42 @@
 
 import { useEffect, useState } from 'react'
 import { collection, getDocs, orderBy, query } from 'firebase/firestore'
-import { db, type Food, type Category, type Tag } from '@/lib/firebase'
+import { db, type Food, type Section, type Tag, SECTION_CATEGORIES } from '@/lib/firebase'
 import AddFoodModal from '@/components/AddFoodModal'
 import EditFoodModal from '@/components/EditFoodModal'
 import FoodCard from '@/components/FoodCard'
 import PushNotificationButton from '@/components/PushNotificationButton'
 import TagManager from '@/components/TagManager'
 
-const CATEGORIES: Array<'全て' | Category> = ['全て', '冷蔵', '冷凍', '常温']
+const SECTIONS: Section[] = ['食材', '日用品', '防災用品']
 
-const CATEGORY_ICONS: Record<string, string> = {
-  全て: '🍽️', 冷蔵: '🧊', 冷凍: '❄️', 常温: '🏠',
+const SECTION_ICONS: Record<Section, string> = {
+  食材: '🥦',
+  日用品: '🧴',
+  防災用品: '🎒',
 }
 
-const CATEGORY_ACTIVE: Record<string, string> = {
-  全て: 'from-emerald-500 to-teal-500 shadow-emerald-500/30',
-  冷蔵: 'from-blue-500 to-cyan-400 shadow-blue-500/30',
-  冷凍: 'from-violet-500 to-indigo-400 shadow-violet-500/30',
-  常温: 'from-amber-500 to-orange-400 shadow-amber-500/30',
+const SECTION_ACTIVE: Record<Section, string> = {
+  食材: 'from-emerald-500 to-teal-500 shadow-emerald-500/30',
+  日用品: 'from-blue-500 to-sky-400 shadow-blue-500/30',
+  防災用品: 'from-amber-500 to-orange-400 shadow-amber-500/30',
 }
 
 type SortKey = 'expiry' | 'name' | 'category' | 'added'
 
 const SORT_LABELS: Record<SortKey, string> = {
-  expiry: '消費期限順',
+  expiry: '使用期限順',
   name: '名前順',
   category: 'カテゴリ順',
   added: '追加順',
 }
 
-const CATEGORY_ORDER: Record<string, number> = { 冷蔵: 0, 冷凍: 1, 常温: 2 }
+const CATEGORY_ORDER_MAP: Record<string, number> = {
+  冷蔵: 0, 冷凍: 1, 常温: 2,
+  'トイレタリー': 0, '洗剤・クリーナー': 1, 'キッチン用品': 2, '衛生用品': 3,
+  '食料・水': 0, '救急・医療': 1, '照明・電源': 2, '工具・避難用品': 3,
+  'その他': 99,
+}
 
 function sortFoods(foods: Food[], key: SortKey): Food[] {
   return [...foods].sort((a, b) => {
@@ -42,7 +48,7 @@ function sortFoods(foods: Food[], key: SortKey): Food[] {
       return a.expiry_date.localeCompare(b.expiry_date)
     }
     if (key === 'name') return a.name.localeCompare(b.name, 'ja')
-    if (key === 'category') return (CATEGORY_ORDER[a.category] ?? 9) - (CATEGORY_ORDER[b.category] ?? 9)
+    if (key === 'category') return (CATEGORY_ORDER_MAP[a.category] ?? 9) - (CATEGORY_ORDER_MAP[b.category] ?? 9)
     if (key === 'added') return b.created_at.localeCompare(a.created_at)
     return 0
   })
@@ -51,7 +57,8 @@ function sortFoods(foods: Food[], key: SortKey): Food[] {
 export default function Home() {
   const [foods, setFoods] = useState<Food[]>([])
   const [tags, setTags] = useState<Tag[]>([])
-  const [activeCategory, setActiveCategory] = useState<'全て' | Category>('全て')
+  const [activeSection, setActiveSection] = useState<Section>('食材')
+  const [activeCategory, setActiveCategory] = useState<string>('全て')
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('expiry')
   const [showFilters, setShowFilters] = useState(false)
@@ -68,7 +75,7 @@ export default function Home() {
       ])
       const foodData = foodsSnap.docs.map((d) => {
         const raw = d.data()
-        return { id: d.id, ...raw, tags: raw.tags ?? [] } as Food
+        return { id: d.id, ...raw, tags: raw.tags ?? [], section: raw.section ?? '食材' } as Food
       })
       setFoods(foodData)
       setTags(tagsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Tag)))
@@ -77,8 +84,16 @@ export default function Home() {
     loadData()
   }, [])
 
+  const handleSectionChange = (s: Section) => {
+    setActiveSection(s)
+    setActiveCategory('全て')
+    setActiveTag(null)
+  }
+
+  const sectionFoods = foods.filter((f) => (f.section ?? '食材') === activeSection)
+
   const filtered = sortFoods(
-    foods
+    sectionFoods
       .filter((f) => activeCategory === '全て' || f.category === activeCategory)
       .filter((f) => activeTag === null || f.tags?.includes(activeTag)),
     sortKey
@@ -101,29 +116,58 @@ export default function Home() {
     sortKey !== 'expiry' && SORT_LABELS[sortKey],
   ].filter(Boolean).join(' · ')
 
+  const sectionCategories = SECTION_CATEGORIES[activeSection]
+
   return (
     <div className="min-h-screen bg-gray-950">
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-4 shadow-xl shadow-emerald-900/40">
-        <div className="max-w-md mx-auto flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">🌿 冷蔵庫管理</h1>
-            {expiringCount > 0 ? (
-              <p className="text-xs text-emerald-100 mt-0.5">⚠️ {expiringCount}品が3日以内に期限切れ</p>
-            ) : (
-              <p className="text-xs text-emerald-200/60 mt-0.5">在庫をきちんと管理中</p>
-            )}
+      <header className="sticky top-0 z-10 bg-gray-900 border-b border-gray-800 px-4 pt-4 pb-0 shadow-xl shadow-black/40">
+        <div className="max-w-md mx-auto">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h1 className="text-xl font-bold text-white tracking-tight">📦 ストック管理</h1>
+              {expiringCount > 0 ? (
+                <p className="text-xs text-amber-400 mt-0.5">⚠️ {expiringCount}品が3日以内に期限切れ</p>
+              ) : (
+                <p className="text-xs text-gray-600 mt-0.5">在庫をきちんと管理中</p>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowTagManager(true)}
+                className="text-xs text-gray-400 border border-gray-700 rounded-full px-3 py-1.5 hover:border-gray-600 transition-colors"
+              >
+                タグ管理
+              </button>
+              <span className="bg-gray-800 text-gray-300 text-sm font-semibold rounded-full px-3 py-1">
+                {sectionFoods.length}品
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowTagManager(true)}
-              className="text-xs text-emerald-100 border border-emerald-400/50 rounded-full px-3 py-1.5 hover:bg-white/10 transition-colors"
-            >
-              タグ管理
-            </button>
-            <span className="bg-white/20 text-white text-sm font-semibold rounded-full px-3 py-1">
-              {foods.length}品
-            </span>
+
+          {/* Section tabs */}
+          <div className="flex gap-1">
+            {SECTIONS.map((s) => {
+              const count = foods.filter((f) => (f.section ?? '食材') === s).length
+              const isActive = activeSection === s
+              return (
+                <button
+                  key={s}
+                  onClick={() => handleSectionChange(s)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 text-sm font-semibold border-b-2 transition-all ${
+                    isActive
+                      ? 'border-emerald-500 text-white'
+                      : 'border-transparent text-gray-600 hover:text-gray-400'
+                  }`}
+                >
+                  <span>{SECTION_ICONS[s]}</span>
+                  <span>{s}</span>
+                  <span className={`text-xs rounded-full px-1.5 ${isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-800 text-gray-600'}`}>
+                    {count}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
       </header>
@@ -163,10 +207,20 @@ export default function Home() {
           <div className="mb-3 bg-gray-900 border border-gray-800 rounded-xl p-3 flex flex-col gap-3">
             {/* Category */}
             <div>
-              <p className="text-xs text-gray-600 mb-2">保存場所</p>
+              <p className="text-xs text-gray-600 mb-2">カテゴリ</p>
               <div className="flex gap-1.5 flex-wrap">
-                {CATEGORIES.map((cat) => {
-                  const count = cat === '全て' ? foods.length : foods.filter((f) => f.category === cat).length
+                <button
+                  onClick={() => setActiveCategory('全て')}
+                  className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    activeCategory === '全て'
+                      ? 'bg-gray-200 text-gray-900'
+                      : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  全て
+                </button>
+                {sectionCategories.map((cat) => {
+                  const count = sectionFoods.filter((f) => f.category === cat).length
                   const isActive = activeCategory === cat
                   return (
                     <button
@@ -174,13 +228,12 @@ export default function Home() {
                       onClick={() => setActiveCategory(cat)}
                       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
                         isActive
-                          ? `bg-gradient-to-r ${CATEGORY_ACTIVE[cat]} text-white shadow-sm`
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                           : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600'
                       }`}
                     >
-                      <span>{CATEGORY_ICONS[cat]}</span>
-                      <span>{cat}</span>
-                      <span className={`text-xs rounded-full px-1 ${isActive ? 'text-white/70' : 'text-gray-600'}`}>{count}</span>
+                      {cat}
+                      <span className={`text-xs ${isActive ? 'text-emerald-400' : 'text-gray-600'}`}>{count}</span>
                     </button>
                   )
                 })}
@@ -203,7 +256,7 @@ export default function Home() {
                     すべて
                   </button>
                   {tags.map((tag) => {
-                    const count = foods.filter((f) => f.tags?.includes(tag.name)).length
+                    const count = sectionFoods.filter((f) => f.tags?.includes(tag.name)).length
                     const isActive = activeTag === tag.name
                     return (
                       <button
@@ -259,8 +312,8 @@ export default function Home() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-20">
-            <div className="text-6xl mb-4">🛒</div>
-            <p className="text-gray-400 font-medium">食材がありません</p>
+            <div className="text-6xl mb-4">{SECTION_ICONS[activeSection]}</div>
+            <p className="text-gray-400 font-medium">{activeSection}がありません</p>
             <p className="text-gray-600 text-sm mt-1">下の＋ボタンで追加しましょう</p>
           </div>
         ) : (
@@ -280,14 +333,19 @@ export default function Home() {
       {/* FAB */}
       <button
         onClick={() => setShowModal(true)}
-        className="fixed bottom-7 right-5 w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-3xl rounded-full shadow-xl shadow-emerald-500/40 flex items-center justify-center active:scale-95 hover:shadow-2xl hover:shadow-emerald-500/50 transition-all"
-        aria-label="食材を追加"
+        className={`fixed bottom-7 right-5 w-16 h-16 bg-gradient-to-br ${
+          activeSection === '食材' ? 'from-emerald-500 to-teal-500 shadow-emerald-500/40' :
+          activeSection === '日用品' ? 'from-blue-500 to-sky-400 shadow-blue-500/40' :
+          'from-amber-500 to-orange-400 shadow-amber-500/40'
+        } text-white text-3xl rounded-full shadow-xl flex items-center justify-center active:scale-95 hover:shadow-2xl transition-all`}
+        aria-label={`${activeSection}を追加`}
       >
         +
       </button>
 
       {showModal && (
         <AddFoodModal
+          section={activeSection}
           tags={tags}
           onAdded={(food) => setFoods((prev) => [food, ...prev])}
           onClose={() => setShowModal(false)}

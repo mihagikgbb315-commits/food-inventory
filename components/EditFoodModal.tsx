@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { doc, updateDoc } from 'firebase/firestore'
-import { db, type Category, type Food, type Tag } from '@/lib/firebase'
+import { db, type Section, type Food, type Tag, SECTION_CATEGORIES, SECTION_UNITS } from '@/lib/firebase'
 
 type Props = {
   food: Food
@@ -11,16 +11,31 @@ type Props = {
   onClose: () => void
 }
 
-const CATEGORIES: Category[] = ['冷蔵', '冷凍', '常温']
-const UNITS = ['個', 'g', 'kg', 'ml', 'L', '本', '袋', '枚', 'パック', '缶']
+const SECTIONS: Section[] = ['食材', '日用品', '防災用品']
+
+const SECTION_ACTIVE: Record<Section, string> = {
+  食材: 'from-emerald-500 to-teal-500',
+  日用品: 'from-blue-500 to-sky-400',
+  防災用品: 'from-amber-500 to-orange-400',
+}
 
 const CATEGORY_ACTIVE: Record<string, string> = {
   冷蔵: 'from-blue-500 to-cyan-400',
   冷凍: 'from-violet-500 to-indigo-400',
   常温: 'from-amber-500 to-orange-400',
+  'トイレタリー': 'from-pink-500 to-rose-400',
+  '洗剤・クリーナー': 'from-cyan-500 to-sky-400',
+  'キッチン用品': 'from-orange-500 to-amber-400',
+  '衛生用品': 'from-green-500 to-emerald-400',
+  '食料・水': 'from-yellow-500 to-amber-400',
+  '救急・医療': 'from-red-500 to-rose-400',
+  '照明・電源': 'from-indigo-500 to-violet-400',
+  '工具・避難用品': 'from-stone-500 to-gray-400',
+  'その他': 'from-gray-500 to-gray-400',
 }
 
 export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props) {
+  const [section, setSection] = useState<Section>(food.section ?? '食材')
   const [form, setForm] = useState({
     name: food.name,
     category: food.category,
@@ -32,6 +47,17 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
   const [selectedTags, setSelectedTags] = useState<string[]>(food.tags ?? [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const categories = SECTION_CATEGORIES[section]
+  const units = SECTION_UNITS[section]
+
+  const handleSectionChange = (s: Section) => {
+    setSection(s)
+    const newCategories = SECTION_CATEGORIES[s]
+    if (!newCategories.includes(form.category)) {
+      setForm((f) => ({ ...f, category: newCategories[0], unit: SECTION_UNITS[s][0] }))
+    }
+  }
 
   const toggleTag = (name: string) =>
     setSelectedTags((prev) =>
@@ -45,6 +71,7 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
     setError(null)
     try {
       const data = {
+        section,
         name: form.name.trim(),
         category: form.category,
         quantity: form.quantity,
@@ -70,7 +97,7 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
         </div>
 
         <div className="sticky top-0 bg-gray-900 px-5 pt-4 pb-4 border-b border-gray-800 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">食材を編集</h2>
+          <h2 className="text-lg font-bold text-white">編集する</h2>
           <button onClick={onClose} className="text-gray-600 hover:text-gray-400 text-2xl leading-none transition-colors">&times;</button>
         </div>
 
@@ -82,7 +109,27 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">食材名</label>
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">種別</label>
+            <div className="flex gap-2">
+              {SECTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => handleSectionChange(s)}
+                  className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    section === s
+                      ? `bg-gradient-to-r ${SECTION_ACTIVE[s]} text-white shadow-md`
+                      : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-600'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">品名</label>
             <input
               type="text"
               required
@@ -93,16 +140,16 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">保存場所</label>
-            <div className="flex gap-2">
-              {CATEGORIES.map((cat) => (
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">カテゴリ</label>
+            <div className="flex gap-2 flex-wrap">
+              {categories.map((cat) => (
                 <button
                   key={cat}
                   type="button"
                   onClick={() => setForm((f) => ({ ...f, category: cat }))}
-                  className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                  className={`px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
                     form.category === cat
-                      ? `bg-gradient-to-r ${CATEGORY_ACTIVE[cat]} text-white shadow-md`
+                      ? `bg-gradient-to-r ${CATEGORY_ACTIVE[cat] ?? 'from-gray-500 to-gray-400'} text-white shadow-md`
                       : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-600'
                   }`}
                 >
@@ -153,14 +200,14 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
                 onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
                 className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               >
-                {UNITS.map((u) => <option key={u}>{u}</option>)}
+                {units.map((u) => <option key={u}>{u}</option>)}
               </select>
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">消費期限（任意）</label>
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">使用期限（任意）</label>
               {form.expiry_date && (
                 <button
                   type="button"
@@ -184,7 +231,7 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
             <textarea
               value={form.memo}
               onChange={(e) => setForm((f) => ({ ...f, memo: e.target.value }))}
-              placeholder="例：開封済み、塩分控えめ、冷凍前に下処理済み..."
+              placeholder="例：開封済み、あと1本あり..."
               rows={2}
               className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-600 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
             />

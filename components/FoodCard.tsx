@@ -12,9 +12,21 @@ type Props = {
 }
 
 const CATEGORY_BORDER: Record<string, string> = {
+  // 食材
   冷蔵: 'border-l-blue-400',
   冷凍: 'border-l-violet-400',
   常温: 'border-l-amber-400',
+  // 日用品
+  'トイレタリー': 'border-l-pink-400',
+  '洗剤・クリーナー': 'border-l-cyan-400',
+  'キッチン用品': 'border-l-orange-400',
+  '衛生用品': 'border-l-green-400',
+  // 防災用品
+  '食料・水': 'border-l-yellow-400',
+  '救急・医療': 'border-l-red-400',
+  '照明・電源': 'border-l-indigo-400',
+  '工具・避難用品': 'border-l-stone-400',
+  'その他': 'border-l-gray-500',
 }
 
 function expiryStatus(expiryDate: string | null) {
@@ -29,6 +41,7 @@ function expiryStatus(expiryDate: string | null) {
 export default function FoodCard({ food, onDeleted, onEdit }: Props) {
   const [deleting, setDeleting] = useState(false)
   const status = expiryStatus(food.expiry_date)
+  const borderClass = CATEGORY_BORDER[food.category] ?? 'border-l-gray-500'
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -41,7 +54,7 @@ export default function FoodCard({ food, onDeleted, onEdit }: Props) {
   return (
     <div
       onClick={() => onEdit(food)}
-      className={`flex items-center bg-gray-900 border border-gray-800 border-l-4 ${CATEGORY_BORDER[food.category]} rounded-xl px-3 py-2.5 gap-2 cursor-pointer hover:border-gray-700 active:bg-gray-800/80 transition-all`}
+      className={`flex items-center bg-gray-900 border border-gray-800 border-l-4 ${borderClass} rounded-xl px-3 py-2.5 gap-2 cursor-pointer hover:border-gray-700 active:bg-gray-800/80 transition-all`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">

@@ -45,7 +45,7 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
 
   const handleBarcodeDetected = (name: string) => {
     setTab('manual')
-    setForm((f) => ({ ...f, name }))
+    setForm((f) => ({ ...f, name: name || '' }))
   }
 
   const handlePhotoRecognized = async (

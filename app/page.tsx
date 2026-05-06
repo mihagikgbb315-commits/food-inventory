@@ -25,9 +25,9 @@ const CATEGORY_ACTIVE: Record<string, string> = {
 type SortKey = 'expiry' | 'name' | 'category' | 'added'
 
 const SORT_LABELS: Record<SortKey, string> = {
-  expiry: '消費期限',
+  expiry: '消費期限順',
   name: '名前順',
-  category: 'カテゴリ',
+  category: 'カテゴリ順',
   added: '追加順',
 }
 
@@ -54,6 +54,7 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState<'全て' | Category>('全て')
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('expiry')
+  const [showFilters, setShowFilters] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [showTagManager, setShowTagManager] = useState(false)
   const [editingFood, setEditingFood] = useState<Food | null>(null)
@@ -89,6 +90,17 @@ export default function Home() {
     return days >= 0 && days <= 3
   }).length
 
+  const activeFilterCount =
+    (activeCategory !== '全て' ? 1 : 0) +
+    (activeTag !== null ? 1 : 0) +
+    (sortKey !== 'expiry' ? 1 : 0)
+
+  const filterSummary = [
+    activeCategory !== '全て' && activeCategory,
+    activeTag && `#${activeTag}`,
+    sortKey !== 'expiry' && SORT_LABELS[sortKey],
+  ].filter(Boolean).join(' · ')
+
   return (
     <div className="min-h-screen bg-gray-950">
       {/* Header */}
@@ -116,89 +128,128 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 pt-4 pb-28">
-        {/* Push notification */}
-        <div className="mb-4">
-          <PushNotificationButton />
-        </div>
+      <div className="max-w-md mx-auto px-4 pt-3 pb-28">
+        {/* Filter toggle bar */}
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className="w-full flex items-center justify-between px-3 py-2 mb-2 rounded-xl bg-gray-900 border border-gray-800 hover:border-gray-700 transition-all"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-500 flex-shrink-0">
+              <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>
+            </svg>
+            {activeFilterCount > 0 ? (
+              <span className="text-xs text-emerald-400 truncate">{filterSummary}</span>
+            ) : (
+              <span className="text-xs text-gray-600">絞り込み・並び替え</span>
+            )}
+            {activeFilterCount > 0 && (
+              <span className="flex-shrink-0 text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-full px-1.5 py-0.5 leading-none">
+                {activeFilterCount}
+              </span>
+            )}
+          </div>
+          <svg
+            xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+            className={`text-gray-600 flex-shrink-0 transition-transform ${showFilters ? 'rotate-180' : ''}`}
+          >
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
 
-        {/* Category filters */}
-        <div className="flex gap-2 mb-2 overflow-x-auto pb-1 scrollbar-hide">
-          {CATEGORIES.map((cat) => {
-            const count = cat === '全て' ? foods.length : foods.filter((f) => f.category === cat).length
-            const isActive = activeCategory === cat
-            return (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold transition-all ${
-                  isActive
-                    ? `bg-gradient-to-r ${CATEGORY_ACTIVE[cat]} text-white shadow-md`
-                    : 'bg-gray-900 text-gray-400 border border-gray-800 hover:border-gray-700'
-                }`}
-              >
-                <span>{CATEGORY_ICONS[cat]}</span>
-                <span>{cat}</span>
-                <span className={`text-xs rounded-full px-1.5 py-0.5 ${
-                  isActive ? 'bg-white/25 text-white' : 'bg-gray-800 text-gray-500'
-                }`}>{count}</span>
-              </button>
-            )
-          })}
-        </div>
+        {/* Expandable filter panel */}
+        {showFilters && (
+          <div className="mb-3 bg-gray-900 border border-gray-800 rounded-xl p-3 flex flex-col gap-3">
+            {/* Category */}
+            <div>
+              <p className="text-xs text-gray-600 mb-2">保存場所</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {CATEGORIES.map((cat) => {
+                  const count = cat === '全て' ? foods.length : foods.filter((f) => f.category === cat).length
+                  const isActive = activeCategory === cat
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                        isActive
+                          ? `bg-gradient-to-r ${CATEGORY_ACTIVE[cat]} text-white shadow-sm`
+                          : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600'
+                      }`}
+                    >
+                      <span>{CATEGORY_ICONS[cat]}</span>
+                      <span>{cat}</span>
+                      <span className={`text-xs rounded-full px-1 ${isActive ? 'text-white/70' : 'text-gray-600'}`}>{count}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
 
-        {/* Tag filters */}
-        {tags.length > 0 && (
-          <div className="flex gap-2 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-            <button
-              onClick={() => setActiveTag(null)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                activeTag === null
-                  ? 'bg-gray-200 text-gray-900'
-                  : 'bg-gray-900 text-gray-500 border border-gray-800 hover:border-gray-700'
-              }`}
-            >
-              すべて
-            </button>
-            {tags.map((tag) => {
-              const count = foods.filter((f) => f.tags?.includes(tag.name)).length
-              const isActive = activeTag === tag.name
-              return (
-                <button
-                  key={tag.id}
-                  onClick={() => setActiveTag(isActive ? null : tag.name)}
-                  className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    isActive
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : 'bg-gray-900 text-gray-500 border border-gray-800 hover:border-gray-700'
-                  }`}
-                >
-                  {tag.name}
-                  <span className={`rounded-full px-1.5 ${
-                    isActive ? 'bg-emerald-500/30 text-emerald-300' : 'bg-gray-800 text-gray-600'
-                  }`}>{count}</span>
-                </button>
-              )
-            })}
+            {/* Tags */}
+            {tags.length > 0 && (
+              <div>
+                <p className="text-xs text-gray-600 mb-2">タグ</p>
+                <div className="flex gap-1.5 flex-wrap">
+                  <button
+                    onClick={() => setActiveTag(null)}
+                    className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      activeTag === null
+                        ? 'bg-gray-200 text-gray-900'
+                        : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-600'
+                    }`}
+                  >
+                    すべて
+                  </button>
+                  {tags.map((tag) => {
+                    const count = foods.filter((f) => f.tags?.includes(tag.name)).length
+                    const isActive = activeTag === tag.name
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => setActiveTag(isActive ? null : tag.name)}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                          isActive
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-600'
+                        }`}
+                      >
+                        {tag.name}
+                        <span className={`text-xs ${isActive ? 'text-emerald-400' : 'text-gray-600'}`}>{count}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Sort */}
+            <div>
+              <p className="text-xs text-gray-600 mb-2">並び替え</p>
+              <div className="flex gap-1.5 flex-wrap">
+                {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => setSortKey(key)}
+                    className={`px-2.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      sortKey === key
+                        ? 'bg-gray-600 text-white'
+                        : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-600'
+                    }`}
+                  >
+                    {SORT_LABELS[key]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Push notification */}
+            <div className="pt-1 border-t border-gray-800">
+              <PushNotificationButton />
+            </div>
           </div>
         )}
-
-        {/* Sort options */}
-        <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-          {(Object.keys(SORT_LABELS) as SortKey[]).map((key) => (
-            <button
-              key={key}
-              onClick={() => setSortKey(key)}
-              className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
-                sortKey === key
-                  ? 'bg-gray-700 text-white'
-                  : 'text-gray-600 hover:text-gray-400'
-              }`}
-            >
-              {SORT_LABELS[key]}
-            </button>
-          ))}
-        </div>
 
         {/* Food list */}
         {loading ? (

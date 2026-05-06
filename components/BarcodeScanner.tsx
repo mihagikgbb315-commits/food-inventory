@@ -29,14 +29,11 @@ export default function BarcodeScanner({ onDetected, onClose }: Props) {
       const { BrowserMultiFormatReader } = await import('@zxing/browser')
       const reader = new BrowserMultiFormatReader()
       try {
-        const devices = await BrowserMultiFormatReader.listVideoInputDevices()
-        const back = devices.find((d) => /back|rear|environment/i.test(d.label))
-        const deviceId = back?.deviceId ?? devices[0]?.deviceId
-
         if (!videoRef.current || stopped) return
 
-        controlsRef.current = await reader.decodeFromVideoDevice(
-          deviceId,
+        // facingMode: 'environment' でバックカメラを明示指定（iOS対応）
+        controlsRef.current = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: 'environment' } } },
           videoRef.current,
           async (result) => {
             if (!result || detectedRef.current) return

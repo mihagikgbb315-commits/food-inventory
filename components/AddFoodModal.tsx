@@ -224,7 +224,18 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">消費期限（任意）</label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider">消費期限（任意）</label>
+                  {form.expiry_date && (
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, expiry_date: '' }))}
+                      className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+                    >
+                      クリア
+                    </button>
+                  )}
+                </div>
                 <input
                   type="date"
                   value={form.expiry_date}

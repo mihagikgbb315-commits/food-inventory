@@ -47,9 +47,9 @@ export default function PushNotificationButton() {
     <button
       onClick={subscribe}
       disabled={subscribing}
-      className="w-full flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-xl text-sm text-green-800 font-medium"
+      className="w-full flex items-center gap-3 px-4 py-3.5 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-sm text-emerald-400 font-medium hover:bg-emerald-500/15 transition-colors disabled:opacity-50"
     >
-      <span>🔔</span>
+      <span className="text-lg">🔔</span>
       <span>
         {subscribing
           ? '設定中...'

@@ -17,6 +17,12 @@ type Tab = 'manual' | 'barcode' | 'photo'
 const CATEGORIES: Category[] = ['冷蔵', '冷凍', '常温']
 const UNITS = ['個', 'g', 'kg', 'ml', 'L', '本', '袋', '枚', 'パック', '缶']
 
+const CATEGORY_ACTIVE: Record<string, string> = {
+  冷蔵: 'from-blue-500 to-cyan-400',
+  冷凍: 'from-violet-500 to-indigo-400',
+  常温: 'from-amber-500 to-orange-400',
+}
+
 const defaultForm = {
   name: '',
   category: '冷蔵' as Category,
@@ -92,20 +98,28 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white px-4 pt-4 pb-2 border-b">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold">食材を追加</h2>
-            <button onClick={onClose} className="text-gray-400 text-2xl leading-none">&times;</button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div className="bg-gray-900 border border-gray-800 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-md max-h-[92vh] overflow-y-auto">
+        {/* Handle bar */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 bg-gray-700 rounded-full" />
+        </div>
+
+        {/* Header */}
+        <div className="sticky top-0 bg-gray-900 px-5 pt-4 pb-3 border-b border-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white">食材を追加</h2>
+            <button onClick={onClose} className="text-gray-600 hover:text-gray-400 text-2xl leading-none transition-colors">&times;</button>
           </div>
-          <div className="flex rounded-lg bg-gray-100 p-1 gap-1">
+          <div className="flex rounded-xl bg-gray-800 p-1 gap-1">
             {(['manual', 'barcode', 'photo'] as Tab[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                  tab === t ? 'bg-white shadow text-green-700' : 'text-gray-600'
+                className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  tab === t
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md'
+                    : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
                 {t === 'manual' ? '手入力' : t === 'barcode' ? 'バーコード' : '写真認識'}
@@ -114,7 +128,7 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
           </div>
         </div>
 
-        <div className="p-4">
+        <div className="p-5">
           {tab === 'barcode' && (
             <BarcodeScanner onDetected={handleBarcodeDetected} onClose={() => setTab('manual')} />
           )}
@@ -122,33 +136,37 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
             <PhotoRecognizer onRecognized={handlePhotoRecognized} onClose={() => setTab('manual')} />
           )}
           {tab === 'manual' && (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-              {error && <p className="text-red-600 text-sm">{error}</p>}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+              {error && (
+                <p className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2">
+                  {error}
+                </p>
+              )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">食材名 *</label>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">食材名</label>
                 <input
                   type="text"
                   required
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="例：卵、鶏肉、牛乳"
-                  className="w-full border rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-600 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">保存場所</label>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">保存場所</label>
                 <div className="flex gap-2">
                   {CATEGORIES.map((cat) => (
                     <button
                       key={cat}
                       type="button"
                       onClick={() => setForm((f) => ({ ...f, category: cat }))}
-                      className={`flex-1 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                         form.category === cat
-                          ? 'bg-green-600 text-white border-green-600'
-                          : 'border-gray-300 text-gray-700'
+                          ? `bg-gradient-to-r ${CATEGORY_ACTIVE[cat]} text-white shadow-md`
+                          : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-600'
                       }`}
                     >
                       {cat}
@@ -159,17 +177,17 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
 
               {tags.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">タグ（任意・複数選択可）</label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">タグ（複数可）</label>
                   <div className="flex flex-wrap gap-2">
                     {tags.map((tag) => (
                       <button
                         key={tag.id}
                         type="button"
                         onClick={() => toggleTag(tag.name)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                        className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
                           selectedTags.includes(tag.name)
-                            ? 'bg-green-600 text-white border-green-600'
-                            : 'bg-white text-gray-600 border-gray-300'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                            : 'bg-gray-800 text-gray-500 border border-gray-700 hover:border-gray-600'
                         }`}
                       >
                         {tag.name}
@@ -181,22 +199,22 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
 
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">数量</label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">数量</label>
                   <input
                     type="number"
                     min={0}
                     step="any"
                     value={form.quantity}
                     onChange={(e) => setForm((f) => ({ ...f, quantity: parseFloat(e.target.value) || 0 }))}
-                    className="w-full border rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">単位</label>
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">単位</label>
                   <select
                     value={form.unit}
                     onChange={(e) => setForm((f) => ({ ...f, unit: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
+                    className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                   >
                     {UNITS.map((u) => <option key={u}>{u}</option>)}
                   </select>
@@ -204,19 +222,19 @@ export default function AddFoodModal({ tags, onAdded, onClose }: Props) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">消費期限（任意）</label>
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">消費期限（任意）</label>
                 <input
                   type="date"
                   value={form.expiry_date}
                   onChange={(e) => setForm((f) => ({ ...f, expiry_date: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={saving}
-                className="w-full py-3 rounded-lg bg-green-600 text-white font-bold text-base disabled:opacity-50"
+                className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold text-base disabled:opacity-40 hover:shadow-lg hover:shadow-emerald-500/30 active:scale-[0.98] transition-all"
               >
                 {saving ? '保存中...' : '追加する'}
               </button>

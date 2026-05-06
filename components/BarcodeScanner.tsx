@@ -47,7 +47,7 @@ export default function BarcodeScanner({ onDetected, onClose }: Props) {
           }
         )
       } catch (e) {
-        if (!stopped) setError('カメラにアクセスできません。カメラの使用を許可してください。')
+        if (!stopped) setError('カメラにアクセスできません。\nカメラの使用を許可してください。')
         console.error(e)
       }
     }
@@ -62,25 +62,30 @@ export default function BarcodeScanner({ onDetected, onClose }: Props) {
   return (
     <div className="flex flex-col items-center gap-4">
       {error ? (
-        <p className="text-red-600 text-sm text-center">{error}</p>
+        <div className="w-full text-center bg-red-500/10 border border-red-500/20 rounded-2xl px-4 py-6">
+          <p className="text-red-400 text-sm whitespace-pre-line">{error}</p>
+        </div>
       ) : looking ? (
-        <div className="flex flex-col items-center gap-2 py-4">
-          <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-sm text-gray-600">商品名を検索中...</p>
+        <div className="flex flex-col items-center gap-3 py-8">
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-400 text-sm">商品名を検索中...</p>
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-600">バーコードをカメラに向けてください</p>
-          <div className="relative w-full max-w-sm aspect-video bg-black rounded-lg overflow-hidden">
+          <p className="text-gray-400 text-sm">バーコードをカメラに向けてください</p>
+          <div className="relative w-full max-w-sm aspect-video bg-gray-800 rounded-2xl overflow-hidden border border-gray-700">
             <video ref={videoRef} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 border-4 border-green-400 rounded-lg pointer-events-none" />
+            <div className="absolute inset-0 border-4 border-emerald-400/60 rounded-2xl pointer-events-none" />
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-3/4 h-0.5 bg-emerald-400/60" />
+            </div>
           </div>
         </>
       )}
       {!looking && (
         <button
           onClick={onClose}
-          className="w-full py-2 rounded-lg border border-gray-300 text-gray-700"
+          className="w-full py-3 rounded-xl bg-gray-800 border border-gray-700 text-gray-400 font-medium hover:border-gray-600 transition-colors"
         >
           キャンセル
         </button>

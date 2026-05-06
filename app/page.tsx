@@ -78,7 +78,10 @@ export default function Home() {
         return { id: d.id, ...raw, tags: raw.tags ?? [], section: raw.section ?? '食材' } as Food
       })
       setFoods(foodData)
-      setTags(tagsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Tag)))
+      setTags(tagsSnap.docs.map((d) => {
+        const raw = d.data()
+        return { id: d.id, ...raw, section: raw.section ?? '食材' } as Tag
+      }))
       setLoading(false)
     }
     loadData()
@@ -91,6 +94,7 @@ export default function Home() {
   }
 
   const sectionFoods = foods.filter((f) => (f.section ?? '食材') === activeSection)
+  const sectionTags = tags.filter((t) => (t.section ?? '食材') === activeSection)
 
   const filtered = sortFoods(
     sectionFoods
@@ -241,7 +245,7 @@ export default function Home() {
             </div>
 
             {/* Tags */}
-            {tags.length > 0 && (
+            {sectionTags.length > 0 && (
               <div>
                 <p className="text-xs text-gray-600 mb-2">タグ</p>
                 <div className="flex gap-1.5 flex-wrap">
@@ -255,7 +259,7 @@ export default function Home() {
                   >
                     すべて
                   </button>
-                  {tags.map((tag) => {
+                  {sectionTags.map((tag) => {
                     const count = sectionFoods.filter((f) => f.tags?.includes(tag.name)).length
                     const isActive = activeTag === tag.name
                     return (
@@ -346,7 +350,7 @@ export default function Home() {
       {showModal && (
         <AddFoodModal
           section={activeSection}
-          tags={tags}
+          tags={sectionTags}
           onAdded={(food) => setFoods((prev) => [food, ...prev])}
           onClose={() => setShowModal(false)}
         />
@@ -355,7 +359,7 @@ export default function Home() {
       {editingFood && (
         <EditFoodModal
           food={editingFood}
-          tags={tags}
+          tags={tags.filter((t) => (t.section ?? '食材') === (editingFood.section ?? '食材'))}
           onUpdated={(updated) => {
             setFoods((prev) => prev.map((f) => f.id === updated.id ? updated : f))
             setEditingFood(null)
@@ -367,6 +371,7 @@ export default function Home() {
       {showTagManager && (
         <TagManager
           tags={tags}
+          activeSection={activeSection}
           onTagsChanged={setTags}
           onClose={() => setShowTagManager(false)}
         />

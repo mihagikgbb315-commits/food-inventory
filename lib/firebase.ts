@@ -34,6 +34,7 @@ export type Category = '冷蔵' | '冷凍' | '常温'
 export type Tag = {
   id: string
   name: string
+  section: Section
   created_at: string
 }
 

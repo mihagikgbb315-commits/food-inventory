@@ -31,4 +31,5 @@ export type Food = {
   expiry_date: string | null
   created_at: string
   tags: string[]
+  memo: string
 }

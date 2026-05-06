@@ -42,6 +42,9 @@ export default function FoodCard({ food, onDeleted, onEdit }: Props) {
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-white truncate">{food.name}</p>
         <p className="text-sm text-gray-500 mt-0.5">{food.quantity} {food.unit}</p>
+        {food.memo && (
+          <p className="text-xs text-gray-500 mt-1 leading-relaxed">{food.memo}</p>
+        )}
         {food.tags?.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mt-2">
             {food.tags.map((tag) => (

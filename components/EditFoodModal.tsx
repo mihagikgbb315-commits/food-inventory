@@ -27,6 +27,7 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
     quantity: food.quantity,
     unit: food.unit,
     expiry_date: food.expiry_date ?? '',
+    memo: food.memo ?? '',
   })
   const [selectedTags, setSelectedTags] = useState<string[]>(food.tags ?? [])
   const [saving, setSaving] = useState(false)
@@ -50,6 +51,7 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
         unit: form.unit,
         expiry_date: form.expiry_date || null,
         tags: selectedTags,
+        memo: form.memo.trim(),
       }
       await updateDoc(doc(db, 'foods', food.id), data)
       onUpdated({ ...food, ...data })
@@ -163,6 +165,17 @@ export default function EditFoodModal({ food, tags, onUpdated, onClose }: Props)
               value={form.expiry_date}
               onChange={(e) => setForm((f) => ({ ...f, expiry_date: e.target.value }))}
               className="w-full bg-gray-800 border border-gray-700 text-white rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">メモ（任意）</label>
+            <textarea
+              value={form.memo}
+              onChange={(e) => setForm((f) => ({ ...f, memo: e.target.value }))}
+              placeholder="例：開封済み、塩分控えめ、冷凍前に下処理済み..."
+              rows={2}
+              className="w-full bg-gray-800 border border-gray-700 text-white placeholder-gray-600 rounded-xl px-4 py-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
             />
           </div>
 
